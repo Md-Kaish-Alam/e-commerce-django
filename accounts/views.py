@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect
 from django.contrib import messages, auth
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponse
+import requests
 
 # verification email
 from django.contrib.sites.shortcuts import get_current_site
@@ -13,6 +13,8 @@ from django.core.mail import EmailMessage
 
 from .forms import RegistrationForm
 from .models import Account
+from carts.models import Cart, CartItem
+from carts.views import _cart_id
 
 
 def register(request):
@@ -71,9 +73,58 @@ def login(request):
         user = auth.authenticate(email=email, password=password)
 
         if user is not None:
+            # checking any cart Item in session id
+            try:
+                cart = Cart.objects.get(cart_id=_cart_id(request))
+                is_cart_item_exists = CartItem.objects.filter(cart=cart).exists()
+                if is_cart_item_exists:
+                    cart_item = CartItem.objects.filter(cart=cart)
+
+                    # grouping the cart item of same variations
+                    # getting the product variations by the cart_id
+                    product_variation = []
+                    for item in cart_item:
+                        variation = item.variations.all()
+                        product_variation.append(list(variation))
+
+                    # get the cart items from the user to access his product variations
+                    cart_item = CartItem.objects.filter(user=user)
+                    existing_variations_list = []
+                    id = []
+                    for item in cart_item:
+                        existing_variations = item.variations.all()
+                        existing_variations_list.append(list(existing_variations))
+                        id.append(item.id)
+
+                    # common product variation in the both list
+                    for pr in product_variation:
+                        if pr in existing_variations_list:
+                            index = existing_variations_list.index(pr)
+                            item_id = id[index]
+                            item = CartItem.objects.get(id=item_id)
+                            item.quantity += 1
+                            item.user = user
+                            item.save()
+                        else:
+                            cart_item = CartItem.objects.filter(cart=cart)
+                            for item in cart_item:
+                                item.user = user
+                                item.save()
+            except:
+                pass
+
             auth.login(request, user)
             messages.success(request, 'You are now logged in.')
-            return redirect('dashboard')
+            # getting the previous url
+            url = request.META.get('HTTP_REFERER')
+            try:
+                query = requests.utils.urlparse(url).query  # query -> next=/cart/checkout/
+                params = dict(x.split('=') for x in query.split('&'))  # param -> {'next': '/cart/checkout/'}
+                if 'next' in params:
+                    next_page = params['next']
+                    return redirect(next_page)
+            except:
+                return redirect('dashboard')
         else:
             messages.error(request, 'Invalid Login Credentials.')
             return redirect('login')
@@ -173,6 +224,3 @@ def resetPassword(request):
     else:
 
         return render(request, 'accounts/resetPassword.html')
-
-
-
