@@ -107,8 +107,6 @@ def add_cart(request, product_id):
                 existing_variations_list.append(list(existing_variations))
                 id.append(item.id)
 
-            print(existing_variations_list)
-
             if product_variation in existing_variations_list:
                 # increase the cart_item quantity
                 index = existing_variations_list.index(product_variation)
@@ -226,3 +224,4 @@ def checkout(request, total=0, quantity=0, cart_items=None):
 
     }
     return render(request, 'store/checkout.html', context)
+ 
