@@ -18,6 +18,10 @@ class Products(models.Model):
     created_date = models.DateTimeField(auto_now_add=True)
     modified_date = models.DateTimeField(auto_now=True)
 
+    class Meta:
+        verbose_name = 'product'
+        verbose_name_plural = 'products'
+
     def get_url(self):
         return reverse('product_detail', args=[self.category.slug, self.slug])
 
@@ -83,3 +87,16 @@ class ReviewRating(models.Model):
 
     def __str__(self):
         return self.subject
+
+
+class ProductGallery(models.Model):
+    objects = None
+    product = models.ForeignKey(Products, on_delete=models.CASCADE, default=None)
+    image = models.ImageField(upload_to='store/products/', max_length=255)
+
+    class Meta:
+        verbose_name = 'productgallery'
+        verbose_name_plural = 'product Gallery'
+
+    def __str__(self):
+        return self.product.product_name
