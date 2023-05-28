@@ -6,7 +6,8 @@ from .models import Order, Payment, OrderProduct
 from store.models import Products
 
 from django.template.loader import render_to_string
-from django.core.mail import EmailMessage
+from django.core.mail import EmailMessage, send_mail
+from django.conf import settings
 
 import datetime
 import json
@@ -62,15 +63,15 @@ def payments(request):
     CartItem.objects.filter(user=request.user).delete()
 
     # send order received mail to customer
-    # mail_subject = 'Thank You for your order.'
-    # message = render_to_string('orders/order_received_email.html', {
-    #     'user': request.user,
-    #     'order': order
-    # })
-    #
-    # to_email = request.user.email
-    # send_email = EmailMessage(mail_subject, message, to=[to_email])
-    # send_email.send()
+    mail_subject = 'Thank You for your order.'
+    message = render_to_string('orders/order_received_email.html', {
+        'user': request.user,
+        'order': order
+    })
+
+    to_email = request.user.email
+    from_email = settings.EMAIL_HOST_USER
+    send_mail(subject=mail_subject, message=message, from_email=from_email, recipient_list=[to_email])
 
     # send order number and transaction id to sendData function
     data = {

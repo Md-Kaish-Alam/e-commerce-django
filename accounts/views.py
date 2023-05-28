@@ -9,7 +9,8 @@ from django.template.loader import render_to_string
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes
 from django.contrib.auth.tokens import default_token_generator
-from django.core.mail import EmailMessage
+from django.core.mail import EmailMessage, send_mail
+from django.conf import settings
 
 from .forms import RegistrationForm, UserForm, UserProfileForm
 from .models import Account, UserProfile
@@ -40,6 +41,12 @@ def register(request):
             user.phone_number = phone_number
             user.save()
 
+            # Create a user profile
+            profile = UserProfile()
+            profile.user_id = user.id
+            profile.profile_picture = 'default/default-user.png'
+            profile.save()
+
             # User activation link
 
             current_site = get_current_site(request)
@@ -52,8 +59,8 @@ def register(request):
             })
 
             to_email = email
-            send_email = EmailMessage(mail_subject, message, to=[to_email])
-            send_email.send()
+            from_email = settings.EMAIL_HOST_USER
+            send_mail(subject=mail_subject, message=message, from_email=from_email, recipient_list=[to_email])
 
             # messages.success(request, 'We have sent you a verification email. Please verify your self.')
 
@@ -188,8 +195,8 @@ def forgotPassword(request):
                 'token': default_token_generator.make_token(user),
             })
             to_email = email
-            send_email = EmailMessage(mail_subject, message, to=[to_email])
-            send_email.send()
+            from_email = settings.EMAIL_HOST_USER
+            send_mail(subject=mail_subject, message=message, from_email=from_email, recipient_list=[to_email])
 
             messages.success(request, 'Password reset email has been sent to your email address.')
             return redirect('login')
