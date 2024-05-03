@@ -126,6 +126,7 @@ def login(request):
             messages.success(request, 'You are now logged in.')
             # getting the previous url
             url = request.META.get('HTTP_REFERER')
+            
             try:
                 query = requests.utils.urlparse(url).query  # query -> next=/cart/checkout/
                 params = dict(x.split('=') for x in query.split('&'))  # param -> {'next': '/cart/checkout/'}
